@@ -15,11 +15,11 @@ st.set_page_config(
 def parse_raw_text(raw_text):
     """Extracts numerical data from the raw pasted EV webpage text using regex."""
     data = {}
-    
+
     def extract_int(pattern):
         match = re.search(pattern, raw_text, re.IGNORECASE)
         return int(match.group(1).replace(',', '')) if match else 0
-        
+
     def extract_float(pattern):
         match = re.search(pattern, raw_text, re.IGNORECASE)
         return float(match.group(1).replace(',', '')) if match else 0.0
@@ -29,16 +29,16 @@ def parse_raw_text(raw_text):
     data['ev_daily_amount'] = extract_float(r"(?:Daily Amount|DAILY_AMOUNT)\s+([\d,\.]+)")
     data['total_bus'] = 180  # Hardcoded as requested
     data['working_bus'] = extract_int(r"(?:Operational Buses|Working Buses|WORKING_BUS)\s+([\d,]+)")
-    
+
     # Extracting MST Data
     data['mst_count'] = extract_int(r"(?:MstCardCharge Count|TODAY_MSTCARD_CHARGE_CNT)\s+([\d,]+)")
     data['mst_amount'] = extract_float(r"(?:MstcardCharge Amount|TODAY_MSTCARD_CHARGE_AMT)\s+([\d,\.]+)")
     data['mst_balance'] = extract_float(r"(?:MstcardBalance Amount|TODAY_MSTCARD_BLNC_CHARGE_AMT)\s+([\d,\.]+)")
-    
+
     # Extracting Card Charge Data
     data['card_charge_count'] = extract_int(r"(?:Daily Card Charge Count|TODAY_CARD_CHARGE_CNT)\s+([\d,]+)")
     data['card_charge_amount'] = extract_float(r"(?:Daily Card Charge Amount|TODAY_CARD_CHARGE_AMT)\s+([\d,\.]+)")
-    
+
     # Extracting Ticket Sales Data
     data['ticket_sale_count'] = extract_int(r"(?:Total Ticket Sales Count|TOTAL_TICKET_SALES_CNT)\s+([\d,]+)")
     data['ticket_sale_amount'] = extract_float(r"(?:Total Ticket Sales Amount|TOTAL_TICKET_SALES_AMT)\s+([\d,\.]+)")
@@ -48,12 +48,12 @@ def parse_raw_text(raw_text):
 def parse_olm_text(raw_text):
     """Extracts Ridership and Revenue from the Orange Line pasted text."""
     data = {}
-    
+
     # Match Total Ridership
     riders_match = re.search(r"Total Ridership\s+([\d,]+)", raw_text, re.IGNORECASE)
     if riders_match:
         data['olm_riders'] = int(riders_match.group(1).replace(',', ''))
-        
+
     # Match Total Revenue (ignoring the Rs. at the end)
     revenue_match = re.search(r"Total Revenue\s+([\d,\.]+)\s*Rs\.?", raw_text, re.IGNORECASE)
     if revenue_match:
@@ -69,7 +69,7 @@ def parse_olm_text(raw_text):
 def fmt(number):
     """Format with commas."""
     if isinstance(number, (int, float)):
-        return f"{number:,.0f}" if number.is_integer() else f"{number:,.2f}"
+        return f"{number:,.0f}" if float(number).is_integer() else f"{number:,.2f}"
     return str(number)
 
 
@@ -94,22 +94,22 @@ col_paste, col_date = st.columns([3, 2])
 with col_paste:
     raw_pasted_text = st.text_area("Paste EV Webpage Text Here: (ctrl+A on gen stats/ confirm numbers with gen charge)", height=100, placeholder="Paste the raw text from the EV portal here...")
     raw_olm_text = st.text_area("Paste Orange Line Text Here: ((ctrl+A on AFC TAP)", height=100, placeholder="Paste the raw text from the Orange Line dashboard here...")
-    
+
     if st.button("🔍 Parse Pasted Data", type="primary"):
         parsed_any = False
-        
+
         # Parse EV Data
         if raw_pasted_text.strip():
             ev_data = parse_raw_text(raw_pasted_text)
             st.session_state.parsed_data.update(ev_data)
             parsed_any = True
-            
+
         # Parse OLM Data
         if raw_olm_text.strip():
             olm_data = parse_olm_text(raw_olm_text)
             st.session_state.parsed_data.update(olm_data)
             parsed_any = True
-            
+
         if parsed_any:
             st.success("✅ Data successfully parsed!")
         else:
@@ -125,7 +125,7 @@ with col_date:
     st.markdown("---")
     st.markdown("#### 📱 QR Mobile (Manual Entry)")
     qr_count = st.number_input("Total QR Tickets", value=int(get_val("qr_count", 0)), step=1)
-    
+
     # Warning if QR Tickets are zero
     if qr_count == 0:
         st.warning("⚠️ Warning: QR Tickets are currently 0. Don't forget to manually enter them!")
@@ -209,7 +209,7 @@ Total Sale Amount: {fmt(grand_total_sales)}"""
 
 summary_template = f"""*Ridership Details*
 Date: {date_str}
-Day: {day_str} 
+Day: {day_str}
 
 *Orange Line Metro* = {fmt(olm_riders)}
 *Feeder Routes* = {fmt(feeder_routes_riders)}
@@ -218,6 +218,7 @@ Day: {day_str}
 *Total Sale Amount* = {fmt(grand_total_sales)}"""
 
 # --- Row 3: Output Templates ---
+# No key= on these boxes, so they refresh every time the numbers change.
 st.markdown("---")
 st.markdown("### 📋 3. Generated Reports")
 
@@ -225,11 +226,11 @@ col_out1, col_out2 = st.columns(2)
 
 with col_out1:
     st.subheader("Main Template")
-    st.text_area("Copy this text:", value=main_template, height=450, key="main_text")
-    
+    st.text_area("Copy main report:", value=main_template, height=450)
+
 with col_out2:
     st.subheader("Short Summary")
-    st.text_area("Copy this text:", value=summary_template, height=200, key="summary_text")
+    st.text_area("Copy short summary:", value=summary_template, height=200)
 
 
 # ==========================================
@@ -273,7 +274,7 @@ Day: {c_day_val}
 *Total Sale Amount* = {c_total_sales_str}"""
 
             st.success("✅ Conversion Successful!")
-            st.text_area("Converted Short Summary", value=converted_summary, height=200, key="converted_text")
-            
+            st.text_area("Converted Short Summary", value=converted_summary, height=200)
+
     except Exception as e:
         st.error(f"Error parsing text: {str(e)}")
